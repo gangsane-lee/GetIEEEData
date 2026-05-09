@@ -1,0 +1,24 @@
+{
+  "database": {
+    "server": "YOUR_SERVER",
+    "port": 1433,
+    "database": "AutoReport",
+    "auth_mode": "windows",
+    "username": "",
+    "password": "",
+    "connection_timeout": 30,
+    "command_timeout": 300,
+    "DisplayInfo": "AutoReport@YOUR_SERVER (Windows 인증)"
+  },
+  "loader": {
+    "scan_interval_minutes": 5,
+    "batch_size": 2000,
+    "data_folder": "C:\\path\\to\\semiconductor_crawler\\data",
+    "archive_folder": "C:\\path\\to\\semiconductor_crawler\\data\\archive",
+    "crawler_bat_path": "C:\\path\\to\\semiconductor_crawler\\start.bat",
+    "crawler_timeout_minutes": 1,
+    "crawler_enabled": true,
+    "etl_enabled": true,
+    "crawler_interval_minutes": 60
+  }
+}

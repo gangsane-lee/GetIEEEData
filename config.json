@@ -1,0 +1,44 @@
+{
+  "global_keywords": [
+    "Transmission Electron Microscopy TEM semiconductor",
+    "Focused Ion Beam FIB semiconductor",
+    "Physical Failure Analysis PFA semiconductor",
+    "Electrical Failure Analysis EFA semiconductor",
+    "High Bandwidth Memory HBM TSV",
+    "Backside Power Delivery Network BSPDN",
+    "Gate-All-Around GAAFET nanosheet",
+    "Complementary FET CFET",
+    "Multi-Bridge Channel FET MBCFET",
+    "High-NA EUV lithography",
+    "Hybrid bonding 3D packaging",
+    "CoWoS advanced packaging",
+    "Ruthenium interconnect semiconductor",
+    "Atomic Layer Etching ALE semiconductor",
+    "Area Selective ALD semiconductor",
+    "Semiconductor yield defect E-beam inspection",
+    "EDS EDX semiconductor interface analysis",
+    "TDDB reliability advanced node",
+    "Epitaxial growth SiGe source drain",
+    "Semiconductor TCAD simulation process"
+  ],
+  "max_results_per_source": 20,
+  "min_new_papers": 3,
+  "timeout_sec": 60,
+  "max_workers": 15,
+  "core_api_key": "",
+  "ieee_api_key": "",
+
+  "sources": {
+    "arxiv": { "enabled": true },
+    "semantic_scholar": { "enabled": true },
+    "openalex": { "enabled": true },
+    "crossref": { "enabled": true },
+    "europepmc": { "enabled": true },
+    "core": { "enabled": true },
+    "base": { "enabled": true },
+    "google_scholar": { "enabled": true, "max_results": 5 },
+    "ieee_xplore": { "enabled": true },
+    "plos": { "enabled": true },
+    "doaj": { "enabled": true }
+  }
+}

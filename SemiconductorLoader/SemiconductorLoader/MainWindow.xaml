@@ -1,0 +1,706 @@
+<Window x:Class="SemiconductorLoader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:b="clr-namespace:SemiconductorLoader.Behaviors"
+        Title="반도체 논문 DB 적재기" Height="720" Width="980"
+        MinHeight="560" MinWidth="760"
+        Background="#12121C" Foreground="#F0F0F0"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- 라벨 -->
+        <Style x:Key="LblStyle" TargetType="TextBlock">
+            <Setter Property="Foreground"        Value="#9CA3AF"/>
+            <Setter Property="FontSize"          Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- 값 -->
+        <Style x:Key="ValStyle" TargetType="TextBlock">
+            <Setter Property="Foreground"        Value="#F3F4F6"/>
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="FontWeight"        Value="Medium"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- 기본 버튼 -->
+        <Style x:Key="BtnBase" TargetType="Button">
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="Padding"         Value="18,7"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Background" Value="#2D2D3F"/>
+                                <Setter Property="Foreground" Value="#6B7280"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BtnRun"  TargetType="Button" BasedOn="{StaticResource BtnBase}">
+            <Setter Property="Background" Value="#2563EB"/>
+        </Style>
+        <Style x:Key="BtnStop" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+            <Setter Property="Background" Value="#DC2626"/>
+        </Style>
+        <Style x:Key="BtnGray" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+            <Setter Property="Background" Value="#374151"/>
+        </Style>
+        <SolidColorBrush x:Key="PanelBg" Color="#1E1E2E"/>
+
+        <!-- 설정 입력 TextBox -->
+        <Style x:Key="SettingsInput" TargetType="TextBox">
+            <Setter Property="Background"              Value="#2D2D3F"/>
+            <Setter Property="Foreground"              Value="#F3F4F6"/>
+            <Setter Property="BorderBrush"             Value="#374151"/>
+            <Setter Property="BorderThickness"         Value="1"/>
+            <Setter Property="Padding"                 Value="8,5"/>
+            <Setter Property="FontSize"                Value="13"/>
+            <Setter Property="CaretBrush"              Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 설정 PasswordBox -->
+        <Style x:Key="SettingsPwBox" TargetType="PasswordBox">
+            <Setter Property="Background"              Value="#2D2D3F"/>
+            <Setter Property="Foreground"              Value="#F3F4F6"/>
+            <Setter Property="BorderBrush"             Value="#374151"/>
+            <Setter Property="BorderThickness"         Value="1"/>
+            <Setter Property="Padding"                 Value="8,5"/>
+            <Setter Property="FontSize"                Value="13"/>
+            <Setter Property="CaretBrush"              Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 탭 컨트롤 -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background"     Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"        Value="0"/>
+        </Style>
+
+        <!-- 탭 아이템 -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background"  Value="Transparent"/>
+            <Setter Property="Foreground"  Value="#9CA3AF"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="Padding"     Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="bd" Background="Transparent"
+                                BorderThickness="0,0,0,2" BorderBrush="Transparent"
+                                Padding="16,8,16,8" Margin="0,0,4,0">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2563EB"/>
+                                <Setter Property="Foreground" Value="#F3F4F6"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected"  Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Foreground" Value="#D1D5DB"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- DataGrid 공통 -->
+        <Style TargetType="DataGrid">
+            <Setter Property="Background"           Value="Transparent"/>
+            <Setter Property="Foreground"           Value="#D1D5DB"/>
+            <Setter Property="BorderThickness"      Value="0"/>
+            <Setter Property="RowBackground"        Value="Transparent"/>
+            <Setter Property="AlternatingRowBackground" Value="#16162A"/>
+            <Setter Property="HorizontalGridLinesBrush"  Value="#2D2D3F"/>
+            <Setter Property="VerticalGridLinesBrush"    Value="Transparent"/>
+            <Setter Property="ColumnHeaderHeight"   Value="36"/>
+            <Setter Property="RowHeight"            Value="30"/>
+            <Setter Property="SelectionMode"        Value="Single"/>
+            <Setter Property="AutoGenerateColumns"  Value="False"/>
+            <Setter Property="IsReadOnly"           Value="True"/>
+            <Setter Property="CanUserAddRows"       Value="False"/>
+            <Setter Property="CanUserDeleteRows"    Value="False"/>
+            <Setter Property="EnableRowVirtualization" Value="True"/>
+            <Setter Property="EnableColumnVirtualization" Value="True"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"      Value="#16162A"/>
+            <Setter Property="Foreground"      Value="#9CA3AF"/>
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="Padding"         Value="12,0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush"     Value="#2D2D3F"/>
+            <Setter Property="SeparatorBrush"  Value="#2D2D3F"/>
+            <Setter Property="Height"          Value="36"/>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1E1E2E"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#2D2D3F"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding"         Value="12,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- RadioButton -->
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#D1D5DB"/>
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ON/OFF 토글 스위치 -->
+        <Style x:Key="ToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="outer" Width="46" Height="24" CornerRadius="12"
+                                Background="#374151" BorderThickness="0" Cursor="Hand">
+                            <Ellipse x:Name="knob" Width="18" Height="18"
+                                     Fill="#9CA3AF" HorizontalAlignment="Left"
+                                     Margin="3,0,0,0" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="outer" Property="Background" Value="#2563EB"/>
+                                <Setter TargetName="knob"  Property="Fill"               Value="White"/>
+                                <Setter TargetName="knob"  Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="knob"  Property="Margin"             Value="0,0,3,0"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="outer" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 타이틀 -->
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>      <!-- TabControl -->
+        </Grid.RowDefinitions>
+
+        <!-- ── 타이틀 ── -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <TextBlock Text="반도체 논문 DB 적재기"
+                       FontSize="18" FontWeight="Bold" Foreground="#E5E7EB"/>
+            <TextBlock Text=" · AutoReport" FontSize="14"
+                       Foreground="#6B7280" VerticalAlignment="Bottom" Margin="4,0,0,1"/>
+        </StackPanel>
+
+        <!-- ── 탭 컨트롤 ── -->
+        <TabControl Grid.Row="2" SelectionChanged="TabControl_SelectionChanged">
+
+            <!-- ━━━━━━━━━━━━━━━━━ 탭 1: 모니터 ━━━━━━━━━━━━━━━━━ -->
+            <TabItem Header="모니터" x:Name="monitorTab">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>   <!-- 상태 패널 -->
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>   <!-- 컨트롤 바 -->
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>   <!-- 진행률 -->
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>      <!-- 로그 -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 상태 패널 -->
+                    <Border Grid.Row="0" Background="{StaticResource PanelBg}"
+                            CornerRadius="7" Padding="18,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="1"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="1"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource LblStyle}" Text="DB 연결 상태"/>
+                                <TextBlock Style="{StaticResource ValStyle}" Margin="0,5,0,0"
+                                           Text="{Binding DbStatus}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Rectangle Grid.Column="1" Fill="#2D2D3F" Width="1" Margin="0,4"/>
+                            <StackPanel Grid.Column="2" Margin="16,0">
+                                <TextBlock Style="{StaticResource LblStyle}" Text="ETL 다음 실행"/>
+                                <TextBlock Style="{StaticResource ValStyle}" Margin="0,5,0,0"
+                                           Text="{Binding EtlNextRunTime}"/>
+                            </StackPanel>
+                            <Rectangle Grid.Column="3" Fill="#2D2D3F" Width="1" Margin="0,4"/>
+                            <StackPanel Grid.Column="4" Margin="16,0,0,0">
+                                <TextBlock Style="{StaticResource LblStyle}" Text="마지막 실행"/>
+                                <TextBlock Style="{StaticResource ValStyle}" Margin="0,5,0,0"
+                                           Text="{Binding LastRunInfo}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 컨트롤 바 — 크롤러 / ETL 2행 -->
+                    <Border Grid.Row="2" Background="{StaticResource PanelBg}"
+                            CornerRadius="7" Padding="18,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- ── 행 1: CSV 크롤러 ── -->
+                            <DockPanel Grid.Row="0" LastChildFill="False">
+                                <ToggleButton DockPanel.Dock="Left"
+                                              Style="{StaticResource ToggleStyle}"
+                                              IsChecked="{Binding IsCrawlerEnabled, Mode=TwoWay}"
+                                              Margin="0,0,10,0"/>
+                                <TextBlock DockPanel.Dock="Left" Text="CSV 크롤러"
+                                           Foreground="#E5E7EB" FontSize="13" FontWeight="Medium"
+                                           Width="90" VerticalAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Left" Text="간격(분)"
+                                           Style="{StaticResource LblStyle}" Margin="0,0,6,0"/>
+                                <TextBox DockPanel.Dock="Left" Width="54"
+                                         Text="{Binding CrawlerIntervalMin, UpdateSourceTrigger=PropertyChanged}"
+                                         IsEnabled="{Binding IsCrawlerEnabled}"
+                                         Background="#2D2D3F" Foreground="#F3F4F6"
+                                         BorderBrush="#374151" BorderThickness="1"
+                                         Padding="6,5" TextAlignment="Center" FontSize="13"
+                                         CaretBrush="White"/>
+                                <TextBlock DockPanel.Dock="Left" Margin="16,0,0,0"
+                                           Text="{Binding CrawlerStatus}"
+                                           Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding CrawlerNextRunTime, StringFormat='다음: {0}'}"
+                                           Foreground="#60A5FA" FontSize="12" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <!-- ── 행 2: ETL 적재 ── -->
+                            <DockPanel Grid.Row="2" LastChildFill="False">
+                                <ToggleButton DockPanel.Dock="Left"
+                                              Style="{StaticResource ToggleStyle}"
+                                              IsChecked="{Binding IsEtlEnabled, Mode=TwoWay}"
+                                              Margin="0,0,10,0"/>
+                                <TextBlock DockPanel.Dock="Left" Text="ETL 적재"
+                                           Foreground="#E5E7EB" FontSize="13" FontWeight="Medium"
+                                           Width="90" VerticalAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Left" Text="간격(분)"
+                                           Style="{StaticResource LblStyle}" Margin="0,0,6,0"/>
+                                <TextBox DockPanel.Dock="Left" Width="54"
+                                         Text="{Binding EtlIntervalMin, UpdateSourceTrigger=PropertyChanged}"
+                                         IsEnabled="{Binding IsEtlEnabled}"
+                                         Background="#2D2D3F" Foreground="#F3F4F6"
+                                         BorderBrush="#374151" BorderThickness="1"
+                                         Padding="6,5" TextAlignment="Center" FontSize="13"
+                                         CaretBrush="White"/>
+                                <Button DockPanel.Dock="Left" Style="{StaticResource BtnRun}"
+                                        Content="▶  지금 실행" Command="{Binding RunNowCommand}"
+                                        Margin="16,0,0,0"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding EtlNextRunTime, StringFormat='다음: {0}'}"
+                                           Foreground="#60A5FA" FontSize="12" VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 진행률 패널 -->
+                    <Border Grid.Row="4" Background="{StaticResource PanelBg}" CornerRadius="7" Padding="18,10"
+                            Visibility="{Binding IsProgressing, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="{Binding ProgressText}"
+                                           Foreground="#60A5FA" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding ProgressValue, StringFormat={}{0}%}"
+                                           Foreground="#9CA3AF" FontSize="11" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ProgressBar Value="{Binding ProgressValue, Mode=OneWay}" Maximum="100" Height="8"
+                                         Foreground="#2563EB" Background="#2D2D3F" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 로그 패널 -->
+                    <Border Grid.Row="6" Background="{StaticResource PanelBg}" CornerRadius="7">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="#16162A" CornerRadius="7,7,0,0" Padding="14,7">
+                                <DockPanel>
+                                    <TextBlock Text="로그" Foreground="#9CA3AF" FontSize="12"/>
+                                    <Button DockPanel.Dock="Right" Content="지우기" FontSize="11"
+                                            Background="Transparent" Foreground="#6B7280"
+                                            BorderThickness="0" Cursor="Hand" Padding="4,0"
+                                            Click="ClearLog_Click"/>
+                                </DockPanel>
+                            </Border>
+                            <ListBox Grid.Row="1"
+                                     x:Name="LogListBox"
+                                     b:AutoScrollBehavior.Enabled="True"
+                                     ItemsSource="{Binding Logs}"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#D1D5DB"
+                                     FontFamily="Consolas, Courier New" FontSize="12"
+                                     Padding="4,4,4,8"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.VirtualizationMode="Recycling"
+                                     HorizontalContentAlignment="Stretch">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding"         Value="10,1"/>
+                                        <Setter Property="Background"      Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="IsTabStop"       Value="False"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="#2D2D3F"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ━━━━━━━━━━━━━━━━━ 탭 2: 설정 ━━━━━━━━━━━━━━━━━ -->
+            <TabItem Header="설정" x:Name="settingsTab">
+                <ScrollViewer Margin="0,12,0,0" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,0,4,16">
+
+                        <!-- ── DB 연결 설정 ── -->
+                        <Border Background="{StaticResource PanelBg}" CornerRadius="7" Padding="20,16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="데이터베이스 연결" Foreground="#E5E7EB"
+                                           FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- 서버 / 포트 -->
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="서버 주소" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="포트" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="0" Grid.Column="4" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <!-- 데이터베이스 -->
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="데이터베이스" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding Database, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <!-- 인증 방식 -->
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="인증 방식" Style="{StaticResource LblStyle}"/>
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal">
+                                        <RadioButton Content="SQL Server 인증"   IsChecked="{Binding IsSqlAuth,     Mode=TwoWay}" Margin="0,0,24,0"/>
+                                        <RadioButton Content="Windows 통합 인증" IsChecked="{Binding IsWindowsAuth, Mode=TwoWay}"/>
+                                    </StackPanel>
+
+                                    <!-- 사용자명 -->
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="사용자명" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                               IsEnabled="{Binding IsSqlAuth}"/>
+
+                                    <!-- 비밀번호 -->
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="비밀번호" Style="{StaticResource LblStyle}"/>
+                                    <PasswordBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="4"
+                                                 x:Name="PwBox"
+                                                 Style="{StaticResource SettingsPwBox}"
+                                                 IsEnabled="{Binding IsSqlAuth}"
+                                                 PasswordChanged="PasswordBox_PasswordChanged"/>
+                                </Grid>
+
+                                <!-- 연결 제한시간 / 명령 제한시간 -->
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="연결 제한시간 (초)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Column="1" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding ConnectionTimeout, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Column="3" Text="명령 제한시간 (초)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Column="4" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding CommandTimeout, UpdateSourceTrigger=PropertyChanged}"/>
+                                </Grid>
+
+                                <!-- 연결 테스트 -->
+                                <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                    <Button Style="{StaticResource BtnGray}" Content="연결 테스트"
+                                            Command="{Binding TestConnectionCommand}"
+                                            Margin="0,0,12,0"/>
+                                    <TextBlock Text="{Binding TestResult}" VerticalAlignment="Center" FontSize="13"
+                                               Foreground="#60A5FA"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 적재 설정 ── -->
+                        <Border Background="{StaticResource PanelBg}" CornerRadius="7" Padding="20,16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="적재 설정" Foreground="#E5E7EB"
+                                           FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- 스캔 간격 / 배치 크기 -->
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="스캔 간격 (분)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding ScanIntervalMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="배치 크기 (건)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="0" Grid.Column="4" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding BatchSize, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <!-- 데이터 폴더 -->
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="데이터 폴더" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding DataFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button    Grid.Row="2" Grid.Column="4" Content="찾아보기"
+                                               Style="{StaticResource BtnGray}" Padding="10,5"
+                                               Click="BrowseDataFolder_Click"/>
+
+                                    <!-- 아카이브 폴더 -->
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="아카이브 폴더" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding ArchiveFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button    Grid.Row="4" Grid.Column="4" Content="찾아보기"
+                                               Style="{StaticResource BtnGray}" Padding="10,5"
+                                               Click="BrowseArchiveFolder_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 크롤러 설정 ── -->
+                        <Border Background="{StaticResource PanelBg}" CornerRadius="7" Padding="20,16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="CSV 크롤러" Foreground="#E5E7EB"
+                                           FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="90"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="34"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- BAT 파일 경로 -->
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="BAT 파일 경로" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource SettingsInput}"
+                                               Text="{Binding CrawlerBatPath, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button    Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="3" Content="찾아보기"
+                                               Style="{StaticResource BtnGray}" Padding="10,5"
+                                               Click="BrowseCrawlerBat_Click"/>
+
+                                    <!-- 제한시간 -->
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="제한시간 (분)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="2" Grid.Column="1" Width="80" HorizontalAlignment="Left"
+                                               Style="{StaticResource SettingsInput}"
+                                               Text="{Binding CrawlerTimeoutMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <!-- 크롤러 기본 활성화 -->
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="크롤러 기본 ON" Style="{StaticResource LblStyle}"/>
+                                    <CheckBox  Grid.Row="4" Grid.Column="1"
+                                               IsChecked="{Binding CrawlerEnabled, Mode=TwoWay}"
+                                               Foreground="#D1D5DB" VerticalAlignment="Center"/>
+
+                                    <!-- 크롤러 실행 주기 -->
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="크롤러 주기 (분)" Style="{StaticResource LblStyle}"/>
+                                    <TextBox   Grid.Row="6" Grid.Column="1" Width="80" HorizontalAlignment="Left"
+                                               Style="{StaticResource SettingsInput}"
+                                               IsEnabled="{Binding CrawlerEnabled}"
+                                               Text="{Binding CrawlerIntervalMinutes, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <!-- ETL 기본 활성화 -->
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="ETL 기본 ON" Style="{StaticResource LblStyle}"/>
+                                    <CheckBox  Grid.Row="8" Grid.Column="1"
+                                               IsChecked="{Binding EtlEnabled, Mode=TwoWay}"
+                                               Foreground="#D1D5DB" VerticalAlignment="Center"/>
+                                </Grid>
+                                <TextBlock Text="※ BAT 경로를 비워두면 크롤러 단계 없이 바로 ETL 수행"
+                                           Foreground="#6B7280" FontSize="11" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── 저장 ── -->
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource BtnRun}" Content="설정 저장"
+                                    Command="{Binding SaveCommand}" Margin="0,0,12,0"/>
+                            <TextBlock Text="{Binding SaveResult}" VerticalAlignment="Center"
+                                       FontSize="13" Foreground="#60A5FA"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ━━━━━━━━━━━━━━━━━ 탭 3: 이력 ━━━━━━━━━━━━━━━━━ -->
+            <TabItem Header="이력" x:Name="historyTab">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>  <!-- 통계 + 새로고침 -->
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>     <!-- DataGrid -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 통계 바 -->
+                    <Border Grid.Row="0" Background="{StaticResource PanelBg}" CornerRadius="7" Padding="18,12">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource BtnGray}"
+                                    Content="새로고침" Command="{Binding RefreshCommand}"
+                                    Padding="12,6" Margin="12,0,0,0"/>
+                            <TextBlock Text="{Binding LoadStatus}"
+                                       Foreground="#6B7280" FontSize="11"
+                                       VerticalAlignment="Center" DockPanel.Dock="Right"
+                                       Margin="12,0,0,0"/>
+                            <TextBlock Text="{Binding StatsText}"
+                                       Foreground="#9CA3AF" FontSize="13"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- DataGrid -->
+                    <Border Grid.Row="2" Background="{StaticResource PanelBg}" CornerRadius="7"
+                            ClipToBounds="True">
+                        <DataGrid ItemsSource="{Binding Entries}"
+                                  FontFamily="Consolas, Courier New" FontSize="12"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="파일명" Width="*" MinWidth="140"
+                                                    Binding="{Binding FileName}"/>
+                                <DataGridTemplateColumn Header="상태" Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Status}"
+                                                       Foreground="{Binding StatusColor}"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Padding="12,0"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="전체" Width="70"
+                                                    Binding="{Binding TotalRows, StringFormat=N0}"/>
+                                <DataGridTextColumn Header="적재" Width="70"
+                                                    Binding="{Binding LoadedRows, StringFormat=N0}"/>
+                                <DataGridTextColumn Header="실패" Width="60"
+                                                    Binding="{Binding FailedRows, StringFormat=N0}"/>
+                                <DataGridTextColumn Header="시작시간" Width="140"
+                                                    Binding="{Binding StartedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                <DataGridTextColumn Header="소요시간" Width="80"
+                                                    Binding="{Binding DurationText}"/>
+                                <DataGridTextColumn Header="오류" Width="*" MinWidth="100"
+                                                    Binding="{Binding ErrorMsg}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+</Window>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SemiconductorLoader</AssemblyName>
+    <RootNamespace>SemiconductorLoader</RootNamespace>
+    <ApplicationIcon />
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MSSQL 연결 + SqlBulkCopy -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <!-- 따옴표·줄바꿈 포함 CSV 안전 파싱 -->
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <!-- db_config.json 역직렬화 -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+# 환경변수 / 민감 설정
+web/backend/.env
+SemiconductorLoader/db_config.json
+
+# 크롤링 결과 데이터
+data/
+
+# 생성된 로그/DB
+master_log.csv
+master_log.db
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# Node.js 의존성 및 빌드
+**/node_modules/
+web/frontend/dist/
+
+# .NET 빌드 결과
+**/bin/
+**/obj/
+
+# Visual Studio 캐시
+**/.vs/
