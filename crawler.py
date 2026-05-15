@@ -11,6 +11,7 @@ import csv
 import json
 import os
 import re
+import threading
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -55,6 +56,12 @@ def get_secure_session() -> requests.Session:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Academic Crawler"
     })
     return session
+
+
+# Semantic Scholar: 1 req/s 제한 → 동시 요청 최대 2개로 제한
+_SS_SEMAPHORE   = threading.Semaphore(2)
+_CORE_WARNED    = False
+_IEEE_WARNED    = False
 
 
 # ──────────────────────────────────────────
@@ -193,15 +200,20 @@ def fetch_arxiv(c: dict, s: requests.Session, t: int) -> list:
 
 
 def fetch_semantic_scholar(c: dict, s: requests.Session, t: int) -> list:
-    data = s.get(
-        "https://api.semanticscholar.org/graph/v1/paper/search",
-        params={
-            "query":  c.get("query", ""),
-            "limit":  min(c.get("max_results_per_source", 20), 100),
-            "fields": "title,authors,year,url,externalIds,abstract,citationCount,publicationVenue,journal",
-        },
-        timeout=t,
-    ).json()
+    with _SS_SEMAPHORE:
+        resp = s.get(
+            "https://api.semanticscholar.org/graph/v1/paper/search",
+            params={
+                "query":  c.get("query", ""),
+                "limit":  min(c.get("max_results_per_source", 20), 100),
+                "fields": "title,authors,year,url,externalIds,abstract,citationCount,publicationVenue,journal",
+            },
+            timeout=t,
+        )
+    resp.raise_for_status()
+    data = resp.json()
+    if "data" not in data:
+        raise RuntimeError(f"Semantic Scholar API 응답 오류: {data}")
     now = _now()
     papers = []
     for i in data.get("data", []):
@@ -328,7 +340,11 @@ def fetch_europepmc(c: dict, s: requests.Session, t: int) -> list:
 
 
 def fetch_core(c: dict, s: requests.Session, t: int) -> list:
+    global _CORE_WARNED
     if not c.get("core_api_key"):
+        if not _CORE_WARNED:
+            tqdm.write("  [CORE] API 키 없음 — config.json의 core_api_key 설정 필요 (무료: https://core.ac.uk/)")
+            _CORE_WARNED = True
         return []
     data = s.get(
         "https://api.core.ac.uk/v3/search/works",
@@ -361,7 +377,7 @@ def fetch_core(c: dict, s: requests.Session, t: int) -> list:
 
 
 def fetch_base(c: dict, s: requests.Session, t: int) -> list:
-    data = s.get(
+    resp = s.get(
         "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
         params={
             "func":   "PerformSearch",
@@ -370,7 +386,11 @@ def fetch_base(c: dict, s: requests.Session, t: int) -> list:
             "format": "json",
         },
         timeout=t,
-    ).json()
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("response", {}).get("docs"):
+        tqdm.write(f"  [BASE] 결과 없음 (query={c.get('query','')[:30]!r}), 응답 키: {list(data.keys())}")
     now = _now()
     papers = []
     for i in data.get("response", {}).get("docs", []):
@@ -403,7 +423,11 @@ def fetch_base(c: dict, s: requests.Session, t: int) -> list:
 
 
 def fetch_ieee_xplore(c: dict, s: requests.Session, t: int) -> list:
+    global _IEEE_WARNED
     if not c.get("ieee_api_key"):
+        if not _IEEE_WARNED:
+            tqdm.write("  [IEEE] API 키 없음 — config.json의 ieee_api_key 설정 필요 (https://developer.ieee.org/)")
+            _IEEE_WARNED = True
         return []
     data = s.get(
         "http://ieeexploreapi.ieee.org/api/v1/search/articles",
@@ -640,8 +664,9 @@ def main() -> None:
                         all_new_papers.append(p)
                         master_records.add(key)
                         new_counts[source_name] += 1
-            except Exception:
+            except Exception as e:
                 err_counts[source_name] += 1
+                tqdm.write(f"  [오류] {source_name} / {keyword}: {type(e).__name__}: {e}")
             finally:
                 bar = bars[source_name]
                 postfix = f"신규 {new_counts[source_name]}건"
