@@ -198,7 +198,7 @@ def fetch_semantic_scholar(c: dict, s: requests.Session, t: int) -> list:
         params={
             "query":  c.get("query", ""),
             "limit":  min(c.get("max_results_per_source", 20), 100),
-            "fields": "title,authors,year,url,externalIds,abstract,citationCount,publicationVenue",
+            "fields": "title,authors,year,url,externalIds,abstract,citationCount,publicationVenue,journal",
         },
         timeout=t,
     ).json()
@@ -218,7 +218,10 @@ def fetch_semantic_scholar(c: dict, s: requests.Session, t: int) -> list:
             doi            = (i.get("externalIds") or {}).get("DOI", ""),
             abstract       = i.get("abstract", "") or "",
             citation_count = i.get("citationCount"),
-            journal        = (i.get("publicationVenue") or {}).get("name", ""),
+            journal        = (
+                                (i.get("publicationVenue") or {}).get("name", "")
+                                or (i.get("journal") or {}).get("name", "")
+                            ),
             extracted_at   = now,
         ))
     return papers
@@ -340,7 +343,7 @@ def fetch_core(c: dict, s: requests.Session, t: int) -> list:
         if not pid:
             continue
         journals_list = i.get("journals") or []
-        core_journal  = journals_list[0].get("title", "") if journals_list else (i.get("publisher", "") or "")
+        core_journal  = journals_list[0].get("title", "") if journals_list else ""
         papers.append(_paper(
             url            = i.get("downloadUrl", ""),
             site_name      = "CORE",
@@ -377,8 +380,12 @@ def fetch_base(c: dict, s: requests.Session, t: int) -> list:
         title      = (title_raw[0] if isinstance(title_raw, list) else title_raw) or ""
         creator    = i.get("dccreator", "")
         authors    = ", ".join(creator) if isinstance(creator, list) else str(creator or "")
-        src_raw      = i.get("dcsource", "") or ""
-        base_journal = (src_raw[0] if isinstance(src_raw, list) else src_raw) or ""
+        src_raw  = i.get("dcsource", "") or ""
+        src_val  = (src_raw[0] if isinstance(src_raw, list) else src_raw) or ""
+        if src_val.startswith("http"):
+            pub_raw  = i.get("dcpublisher", "") or ""
+            src_val  = (pub_raw[0] if isinstance(pub_raw, list) else pub_raw) or ""
+        base_journal = src_val
         papers.append(_paper(
             url            = i.get("dclink", ""),
             site_name      = "BASE",
@@ -461,7 +468,7 @@ def fetch_google_scholar(c: dict, s: requests.Session, t: int) -> list:
                 doi            = bib.get("doi", "") or "",
                 abstract       = bib.get("abstract", "") or "",
                 citation_count = pub.get("num_citations"),
-                journal        = bib.get("venue", "") or "",
+                journal        = bib.get("venue", "") or bib.get("journal", "") or "",
                 extracted_at   = now,
             ))
     except Exception:
